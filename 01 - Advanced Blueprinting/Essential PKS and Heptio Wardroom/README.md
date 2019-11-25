@@ -1,1 +1,0 @@
-This content can be seen on the following GitHub repo - https://github.com/codyde/CAS-Essential-PKS-Ansible 
