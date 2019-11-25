@@ -1,0 +1,33 @@
+name: EC2 + Route53 + S3
+version: 2
+formatVersion: 1
+inputs:
+  reservationname:
+    type: string
+resources:
+  Cloud_Service_AWS_Route53_Record_1:
+    type: Cloud.Service.AWS.Route53.Record
+    dependsOn:
+      - Cloud_AWS_EC2_Instance_1
+    properties:
+      name: '${input.reservationname}'
+      type: A
+      zone_id: 12314142132
+      provider: AWS Company
+      provider_region: us-east-1a
+      ttl: 300
+      records:
+        - '${Cloud_AWS_EC2_Instance_1.address}'
+  Cloud_AWS_EC2_Instance_1:
+    type: Cloud.AWS.EC2.Instance
+    properties:
+      image: Ubuntu
+      flavor: small
+  Cloud_Service_AWS_S3_Bucket_1:
+    type: Cloud.Service.AWS.S3.Bucket
+    dependsOn:
+      - Cloud_AWS_EC2_Instance_1
+    properties:
+      provider: AWS Company
+      provider_region: us-east-1a
+      acl: private

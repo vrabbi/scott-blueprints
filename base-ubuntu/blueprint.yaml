@@ -1,0 +1,66 @@
+name: Base Ubuntu
+version: 1
+formatVersion: 1
+inputs:
+  user:
+    type: string
+    title: Username for SSH
+    description: The username you would like to have for the installation.
+    default: demouser
+  sshkey:
+    type: string
+    encrypted: true
+    title: Enter SSH Key.
+    description: The SSH-Key for connectivity
+    default: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDB5A+k1mtutnuG/1zY7zMWrgmQwieB5BhZ4YbvgWX64lYlp+M4enwNgRDi1IgBHz1MbMLY7HJFXPi8cSQ+GZDJc3mc2KsscKohs4elssJeC9SmcuraeZu6lN5YDY63UwVwpWUROElY1B/EwrVBvQAGY5Z1wk77XbH+rDXz1ZZImUg04lyEsnX+UxD7DCvI9jvIQa8BM0IKNoK/gzJQ/ZGkI8LGhxIs+vFNyoaiWLin4YkDgRvYA4E/iebwPsUCo8ZwelrGr2xTVqgBj9DPDVJjt50GCWZnrRHjDRwlSfzMDo/Cg3N5jkZ8ab0zeyTtuhgkVaGSGaCCMybjQJWHsSYt cmac@Chriss-MacBook-Pro-3.local
+  environment:
+    type: string
+    enum:
+      - AWS
+      - Azure
+      - vSphere
+    default: vSphere
+    title: Select Environment for Deployment
+    description: Target Environment
+resources:
+  ubuntuserver:
+    type: Cloud.Machine
+    metadata:
+      layoutPosition:
+        - 0
+        - 0
+    properties:
+      image: ubuntu
+      flavor: Medium
+      cloudConfig: |
+        packages:
+         - apache2
+
+        users:
+          - name: ${input.user}
+            ssh-authorized-keys:
+              - ${input.sshkey}
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            groups: sudo
+            shell: /bin/bash
+
+        runcmd:
+          - export cloudip=$(curl http://checkip.amazonaws.com/)
+          - export onpremip=$(ip route get 8.8.8.8 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}')
+          - export ip4=${input.environment == "vSphere" ? "$onpremip" : (input.environment == "VMC" ? "$onpremip" : "$cloudip")}
+          - echo $ip4 >> /tmp/environment.txt
+      constraints:
+        - tag: '${input.environment == "AWS" ? "env:aws" : (input.environment == "Azure" ? "env:azure" : "env:vsphere")}'
+      networks:
+        - name: '${resource.Cloud_Network_1.name}'
+  Cloud_Network_1:
+    type: Cloud.Network
+    metadata:
+      layoutPosition:
+        - 1
+        - 0
+    properties:
+      name: ''
+      networkType: existing
+      constraints:
+        - tag: '${input.environment == "AWS" ? "env:aws" : (input.environment == "Azure" ? "env:azure" : "env:vsphere")}'
